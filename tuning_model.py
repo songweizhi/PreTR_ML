@@ -16,15 +16,15 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 
 # Load dataset
-url = "/Users/songweizhi/Dropbox/Research/PreTR_ML/pattern_summary.csv"
+input_data = "/Users/songweizhi/Dropbox/Research/PreTR_ML/pattern_summary_with_head.csv"
 
-names = ['R', 'ED', 'RED', 'IVYWREL', 'Hydrophobic', 'NQ_NQED', 'class']  # optimize
-
-dataset = pandas.read_csv(url, names=names)
-# Split-out validation dataset, http://scikit-learn.org/stable/model_selection.html
+dataset = pandas.read_csv(input_data, header=0)  # header=0 means the first line in the input file is column names
 array = dataset.values
-measurements = array[:, 0:6]  # optimize
-species = array[:, 6]  # optimize
+row_num = array.shape[0]
+col_num = array.shape[1]
+
+measurements = array[:, 0:(col_num - 1)]
+species = array[:, (col_num - 1)]
 validation_size = 0.20
 measurements_train, measurements_validation, species_train, species_validation = model_selection.train_test_split(measurements,
                                                                                                                   species,
@@ -47,6 +47,3 @@ DT.fit(measurements_train, species_train)
 species_predictions = DT.predict(measurements_validation)
 print('\nAccuracy_score: \n%s' % accuracy_score(species_validation, species_predictions))
 print('\nClassification_report: \n%s' % classification_report(species_validation, species_predictions))
-
-
-
