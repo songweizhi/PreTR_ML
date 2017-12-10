@@ -1,7 +1,9 @@
 import os
 import glob
 import shutil
+import numpy as np
 from Bio import SeqIO
+
 
 
 def turn_to_percentage(number_list):

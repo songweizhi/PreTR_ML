@@ -1,8 +1,7 @@
 import os
 import glob
-import shutil
+import numpy as np
 from Bio import SeqIO
-import scipy
 from scipy import stats
 
 
@@ -21,11 +20,11 @@ def get_total_number(to_count, full_sequence):
     return total_num
 
 
-os.chdir('/Users/songweizhi/Desktop/input_files')
+os.chdir('/Users/songweizhi/Dropbox/Research/PreTR_ML/faa_files')
 
 in_percent = 1
 
-file_list = [os.path.basename(file_name) for file_name in glob.glob('/Users/songweizhi/Desktop/input_files/*.faa')]
+file_list = [os.path.basename(file_name) for file_name in glob.glob('*.faa')]
 file_list_sorted = sorted(file_list)
 
 aa_list = ['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
@@ -48,14 +47,18 @@ for each_genome in file_list_sorted:
         concatenated_seq += each_aa_seq
 
     # get measurement
-    P_percent = (get_total_number('P', concatenated_seq))/len(concatenated_seq)
+    P_percent = (get_total_number('P', concatenated_seq))/len(concatenated_seq) # no significant differences
+    R_percent = (get_total_number('R', concatenated_seq))/len(concatenated_seq)
+
     ED_percent = (get_total_number('ED', concatenated_seq))/len(concatenated_seq)
     RED_percent = (get_total_number('RED', concatenated_seq))/len(concatenated_seq)
     IVYWREL_percent = (get_total_number('IVYWREL', concatenated_seq))/len(concatenated_seq)
     hydrophobic_aa_percent = (get_total_number('GAVLIPFMW', concatenated_seq))/len(concatenated_seq)
     NQ_NQED_ratio = (get_total_number('NQ', concatenated_seq))/(get_total_number('NQED', concatenated_seq))
+    K_R_ratio = (get_total_number('K', concatenated_seq))/(get_total_number('R', concatenated_seq)) # no significant differences
 
-    measurement = hydrophobic_aa_percent
+
+    measurement =NQ_NQED_ratio
     measurement = float("{0:.3f}".format(measurement))
 
     if each_genome.startswith('P'):
@@ -68,10 +71,26 @@ for each_genome in file_list_sorted:
     print('%s\t%s' % (each_genome_name, measurement))
 
 
-print('\nTwo sample T-test between P and T:')
-print(stats.ttest_ind(measurement_P, measurement_T, equal_var=False))
-print('\nTwo sample T-test between P and M:')
-print(stats.ttest_ind(measurement_P, measurement_M, equal_var=False))
-print('\nTwo sample T-test between M and T:')
-print(stats.ttest_ind(measurement_M, measurement_T, equal_var=False))
+
+# turn number list into arrary
+measurement_P_arrary = np.array(measurement_P)
+measurement_M_arrary = np.array(measurement_M)
+measurement_T_arrary = np.array(measurement_T)
+
+print('Psychrophiles\tmean: %s\tstd: %s' % (float("{0:.3f}".format(measurement_P_arrary.mean())), float("{0:.3f}".format(measurement_P_arrary.std()))))
+print('Mesophiles\tmean: %s\tstd: %s' % (float("{0:.3f}".format(measurement_M_arrary.mean())), float("{0:.3f}".format(measurement_M_arrary.std()))))
+print('Thermophiles\tmean: %s\tstd: %s' % (float("{0:.3f}".format(measurement_T_arrary.mean())), float("{0:.3f}".format(measurement_T_arrary.std()))))
+print('')
+print('Psychrophiles\tvs\tMesophiles\t(T-test):\tp=%s' % float("{0:.3f}".format(stats.ttest_ind(measurement_P, measurement_M, equal_var=False).pvalue)))
+print('Psychrophiles\tvs\tThermophiles\t(T-test):\tp=%s' % float("{0:.3f}".format(stats.ttest_ind(measurement_P, measurement_T, equal_var=False).pvalue)))
+print('Mesophiles\tvs\tThermophiles\t(T-test):\tp=%s' % float("{0:.3f}".format(stats.ttest_ind(measurement_M, measurement_T, equal_var=False).pvalue)))
+
+
+
+
+
+
+
+
+
 
