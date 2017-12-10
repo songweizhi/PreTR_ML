@@ -47,15 +47,13 @@ for each_genome in file_list_sorted:
         each_aa_seq = str(each_aa.seq)
         concatenated_seq += each_aa_seq
 
-
+    # get measurement
     P_percent = (get_total_number('P', concatenated_seq))/len(concatenated_seq)
     ED_percent = (get_total_number('ED', concatenated_seq))/len(concatenated_seq)
     RED_percent = (get_total_number('RED', concatenated_seq))/len(concatenated_seq)
     IVYWREL_percent = (get_total_number('IVYWREL', concatenated_seq))/len(concatenated_seq)
     hydrophobic_aa_percent = (get_total_number('GAVLIPFMW', concatenated_seq))/len(concatenated_seq)
     NQ_NQED_ratio = (get_total_number('NQ', concatenated_seq))/(get_total_number('NQED', concatenated_seq))
-
-
 
     measurement = hydrophobic_aa_percent
     measurement = float("{0:.3f}".format(measurement))
@@ -76,39 +74,4 @@ print('\nTwo sample T-test between P and M:')
 print(stats.ttest_ind(measurement_P, measurement_M, equal_var=False))
 print('\nTwo sample T-test between M and T:')
 print(stats.ttest_ind(measurement_M, measurement_T, equal_var=False))
-
-
-
-
-
-
-
-
-# The nine amino acids that have hydrophobic side chains are
-# glycine (Gly),    G
-# alanine (Ala),    A
-# valine (Val),     V
-# leucine (Leu),    L
-# isoleucine (Ile), I
-# proline (Pro),    P
-# phenylalanine (Phe), F
-# methionine (Met), and M
-# tryptophan (Trp)      W
-
-
-
-# Reductions in Glu and Asp. The ratio (Asn  Gln)/(Asn  Gln  Glu  Asp)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
