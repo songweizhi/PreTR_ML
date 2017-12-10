@@ -17,15 +17,11 @@ from sklearn.svm import SVC
 
 # Load dataset
 url = "/Users/songweizhi/Dropbox/Research/PreTR_ML/pattern_summary.csv"
-#url = "/Users/songweizhi/Desktop/ML_wd/iris.data"
 
-#names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
-names = ['R', 'ED', 'RED', 'IVYWREL', 'Hydrophobic', 'NQ_NQED', 'class']
-
+names = ['R', 'ED', 'RED', 'IVYWREL', 'Hydrophobic', 'NQ_NQED', 'class']  # optimize
 
 dataset = pandas.read_csv(url, names=names)
-# Split-out validation dataset
-# http://scikit-learn.org/stable/model_selection.html
+# Split-out validation dataset, http://scikit-learn.org/stable/model_selection.html
 array = dataset.values
 measurements = array[:, 0:6]  # optimize
 species = array[:, 6]  # optimize
