@@ -8,6 +8,18 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
 
 
 def get_aa_group_pct_dict(faa_folder, aa_group_list):
@@ -87,20 +99,35 @@ def matrix_to_one_col(file_in, file_out, unchanged_col_num):
 
 ###################################################### file in/out #####################################################
 
+notes = '''
+hydrophobic amino acids: GAVLIPFMW
+'''
 wd = '/Users/songweizhi/Desktop/PreTR_ML'
 
 # file and parameter in
-faa_folder          = '%s/faa_files'            % wd
-genome_cate_file    = '%s/Genome_category.csv'     % wd
-aa_group_list       = ['R', 'ED', 'RED', 'IVYWREL', 'GAVLIPFMW', 'NQ_NQED']  # hydrophobic_aas: GAVLIPFMW
-prepare_traits_file = True
-plot_traits         = True
+faa_folder          = '%s/faa_files'           % wd
+genome_cate_file    = '%s/Genome_category.csv' % wd
+aa_group_list       = ['R', 'ED', 'RED', 'IVYWREL', 'GAVLIPFMW', 'NQ_NQED']
+aa_group_list       = ['R', 'ED', 'RED', 'IVYWREL', 'NQ_NQED']
+#aa_group_list       = ['R', 'ED', 'RED', 'IVYWREL', 'NQ_NQED', 'EK_QH', 'LK_Q']
+
+prepare_traits_file = True  # True or False
+plot_traits         = True  # True or False
+prepare_traits_file = False  # True or False
+plot_traits         = False  # True or False
+
+
+validation_size         = 0.20
+test_size               = 0.20
+random_state            = 1
+n_splits                = 10
 
 # file out
-genomic_traits_file                 = '%s/Genomic_traits.csv'                   % wd
-genomic_traits_OneCol               = '%s/Genomic_traits_OneCol.csv'            % wd
-genomic_traits_plot_scatter_matrix  = '%s/Genomic_traits_scatter_matrix.pdf'    % wd
-genomic_traits_plot_grouped_boxplot = '%s/Genomic_traits_grouped_boxplot.pdf'   % wd
+genomic_traits_file                 = '%s/Genomic_traits.csv'                       % wd
+genomic_traits_OneCol               = '%s/Genomic_traits_OneCol.csv'                % wd
+genomic_traits_plot_scatter_matrix  = '%s/Genomic_traits_scatter_matrix.pdf'        % wd
+genomic_traits_plot_grouped_boxplot = '%s/Genomic_traits_grouped_boxplot.pdf'       % wd
+ml_plot_algorithm_comparison        = '%s/Genomic_traits_algorithm_comparison.pdf'  % wd
 
 
 ############################################# prepare genomic traits file ##############################################
@@ -167,10 +194,10 @@ if prepare_traits_file is True:
 
 ################################################# plot genomic traits ##################################################
 
-if plot_traits is True:
+# read in dataframe
+genomic_traits_df = read_csv(genomic_traits_file, header=0)
 
-    # read in dataframe
-    genomic_traits_df = read_csv(genomic_traits_file, header=0)  # header=0 means the first line in the input file is column names
+if plot_traits is True:
 
     #################### get scatter_matrix plot ####################
 
@@ -210,7 +237,6 @@ if plot_traits is True:
 
 ################################################ Stats of genomic traits ###############################################
 
-
 '''
 
 # turn number list into arrary
@@ -227,3 +253,62 @@ print('Psychrophiles\tvs\tThermophiles\t(T-test):\tp=%s' % float("{0:.3f}".forma
 print('Mesophiles\tvs\tThermophiles\t(T-test):\tp=%s' % float("{0:.3f}".format(stats.ttest_ind(measurement_M, measurement_T, equal_var=False).pvalue)))
 
 '''
+
+################################################## Compare algorithms ##################################################
+
+# read in dataframe
+genomic_traits_array = genomic_traits_df.values
+genome_cate = genomic_traits_array[:, 1]
+traits_matrix = genomic_traits_array[:, 2:]
+traits_matrix_train, traits_matrix_validation, genome_cate_train, genome_cate_validation = train_test_split(traits_matrix, genome_cate, test_size=test_size, random_state=random_state)
+
+# Spot Check Algorithms
+models = []
+models.append(('LR', LogisticRegression(solver='liblinear', multi_class='ovr')))
+models.append(('LDA', LinearDiscriminantAnalysis()))
+models.append(('KNN', KNeighborsClassifier()))
+models.append(('CART', DecisionTreeClassifier()))
+models.append(('NB', GaussianNB()))
+models.append(('SVM', SVC(gamma='auto')))
+
+# evaluate each model in turn
+results = []
+names = []
+print('Compare algorithms:')
+print('Algorithm\tMean\tStd')
+for name, model in models:
+    kfold = StratifiedKFold(n_splits=n_splits, random_state=random_state)
+
+    cv_results = cross_val_score(model,
+                                 traits_matrix_train,
+                                 genome_cate_train,
+                                 cv=KFold(n_splits=n_splits, random_state=random_state),
+                                 scoring='accuracy')
+
+    results.append(cv_results)
+    names.append(name)
+    print('%s\t%f\t%f' % (name, cv_results.mean(), cv_results.std()))
+
+# Compare Algorithms
+plt.boxplot(results, labels=names)
+plt.title('Algorithm Comparison')
+plt.savefig(ml_plot_algorithm_comparison)
+plt.close()
+plt.clf()
+
+
+################################################ Training and Prediction ###############################################
+
+# Make predictions
+algorithm_chose = LinearDiscriminantAnalysis()
+algorithm_chose.fit(traits_matrix_train, genome_cate_train)
+genome_cate_predictions = algorithm_chose.predict(traits_matrix_validation)
+
+print('\nPrediction results:')
+print('Algorithm chose\tLinearDiscriminantAnalysis')
+print('Accuracy\t%s' % accuracy_score(genome_cate_validation, genome_cate_predictions))
+print('\nClassification_report:\n%s' % classification_report(genome_cate_validation, genome_cate_predictions))
+
+
+print(genome_cate_validation)
+print(genome_cate_predictions)
